@@ -1,0 +1,17 @@
+{
+  "builds": [
+    {
+      "src": "form-ai-runner/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "form-ai-runner/dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/form-ai-runner/$1"
+    }
+  ]
+}

@@ -530,4 +530,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Ready to build the future of AI automation?** 🚀
 
-[Get Started](https://closedai.com/get-started) | [View Examples](examples/) | [Read Docs](https://docs.closedai.com) 
+[Get Started](https://closedai.com/get-started) | [View Examples](examples/) | [Read Docs](https://docs.closedai.com) # Deploy trigger
