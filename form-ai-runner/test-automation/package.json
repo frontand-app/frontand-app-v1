@@ -1,0 +1,47 @@
+{
+  "name": "closed-ai-test-automation",
+  "version": "1.0.0",
+  "description": "Automated testing and screenshot agent for CLOSED AI",
+  "main": "screenshot-agent.js",
+  "scripts": {
+    "test": "node screenshot-agent.js",
+    "install-browsers": "npx playwright install"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "keywords": ["testing", "automation", "playwright", "screenshots"],
+  "author": "CLOSED AI Team"
+} 
+  "name": "closed-ai-test-automation",
+  "version": "1.0.0",
+  "description": "Automated testing and screenshot agent for CLOSED AI",
+  "main": "screenshot-agent.js",
+  "scripts": {
+    "test": "node screenshot-agent.js",
+    "install-browsers": "npx playwright install"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "keywords": ["testing", "automation", "playwright", "screenshots"],
+  "author": "CLOSED AI Team"
+} 
+  "name": "closed-ai-test-automation",
+  "version": "1.0.0",
+  "description": "Automated testing and screenshot agent for CLOSED AI",
+  "main": "screenshot-agent.js",
+  "scripts": {
+    "test": "node screenshot-agent.js",
+    "install-browsers": "npx playwright install"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "keywords": ["testing", "automation", "playwright", "screenshots"],
+  "author": "CLOSED AI Team"
+} 
+ 
+ 
+ 
+ 
