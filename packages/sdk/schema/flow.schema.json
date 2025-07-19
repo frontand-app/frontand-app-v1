@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ClosedAI Flow",
+  "description": "Schema for defining CLOSED AI automation flows",
+  "type": "object",
+  "required": ["id", "name", "version", "inputs", "outputs", "runtime", "meta"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{3,64}$",
+      "description": "Unique identifier for the flow"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 100,
+      "description": "Human-readable name for the flow"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the flow"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Detailed description of what the flow does"
+    },
+    "inputs": {
+      "type": "array",
+      "description": "Input parameters for the flow",
+      "items": {
+        "$ref": "#/definitions/parameter"
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "description": "Output parameters from the flow",
+      "items": {
+        "$ref": "#/definitions/parameter"
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["image", "entrypoint"],
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "Docker image or Modal image reference"
+        },
+        "entrypoint": {
+          "type": "string",
+          "default": "main:run",
+          "description": "Module and function to execute (module:function)"
+        },
+        "gpu": {
+          "type": "string",
+          "enum": ["cpu", "l4", "a10g", "a100"],
+          "default": "cpu",
+          "description": "GPU requirement for the flow"
+        },
+        "timeout": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 10,
+          "maximum": 3600,
+          "description": "Maximum runtime in seconds"
+        },
+        "memory": {
+          "type": "integer",
+          "default": 1024,
+          "minimum": 128,
+          "maximum": 32768,
+          "description": "Memory requirement in MB"
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["author", "category", "tags"],
+      "properties": {
+        "author": {
+          "type": "string",
+          "description": "Flow author/creator"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["data-processing", "content-generation", "web-scraping", "analysis", "automation", "other"],
+          "description": "Flow category"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags for discovery and categorization"
+        },
+        "license": {
+          "type": "string",
+          "default": "MIT",
+          "description": "License for the flow"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "Repository URL"
+        },
+        "estimated_cost": {
+          "type": "object",
+          "properties": {
+            "min_usd": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max_usd": {
+              "type": "number",
+              "minimum": 0
+            },
+            "typical_usd": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "description": "Estimated cost ranges for running the flow"
+        }
+      }
+    },
+    "llm": {
+      "type": "object",
+      "description": "LLM configuration if the flow uses language models",
+      "properties": {
+        "default_model": {
+          "type": "string",
+          "description": "Suggested default LLM model ID"
+        },
+        "supported_models": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of supported LLM model IDs"
+        },
+        "estimated_tokens": {
+          "type": "object",
+          "properties": {
+            "input_min": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "input_max": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "output_min": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "output_max": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "description": "Estimated token usage ranges"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "parameter": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$",
+          "description": "Parameter name (valid JavaScript identifier)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "text", "number", "boolean", "url", "file", "json", "array", "object"],
+          "description": "Parameter type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the parameter"
+        },
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the parameter is required"
+        },
+        "default": {
+          "description": "Default value for the parameter"
+        },
+        "validation": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "number",
+              "description": "Minimum value for numbers"
+            },
+            "max": {
+              "type": "number",
+              "description": "Maximum value for numbers"
+            },
+            "minLength": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Minimum length for strings"
+            },
+            "maxLength": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Maximum length for strings"
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Regex pattern for string validation"
+            },
+            "enum": {
+              "type": "array",
+              "description": "List of allowed values"
+            }
+          },
+          "description": "Validation rules for the parameter"
+        },
+        "ui": {
+          "type": "object",
+          "properties": {
+            "widget": {
+              "type": "string",
+              "enum": ["input", "textarea", "select", "checkbox", "file", "url", "json-editor"],
+              "description": "UI widget to use for this parameter"
+            },
+            "placeholder": {
+              "type": "string",
+              "description": "Placeholder text for the input"
+            },
+            "help": {
+              "type": "string",
+              "description": "Help text for the parameter"
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of rows for textarea widget"
+            }
+          },
+          "description": "UI configuration for the parameter"
+        }
+      }
+    }
+  }
+} 

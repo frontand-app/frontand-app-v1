@@ -1,0 +1,396 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Test Python SDK
+  test-python-sdk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/sdk/python
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest pytest-asyncio pytest-cov black isort flake8 mypy
+    
+    - name: Lint with flake8
+      run: flake8 closedai --max-line-length=88 --extend-ignore=E203
+    
+    - name: Format check with black
+      run: black --check closedai
+    
+    - name: Import sort check
+      run: isort --check-only closedai
+    
+    - name: Type check with mypy
+      run: mypy closedai --ignore-missing-imports
+    
+    - name: Test with pytest
+      run: pytest tests/ -v --cov=closedai --cov-report=xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: packages/sdk/python/coverage.xml
+        flags: python-sdk
+
+  # Test TypeScript SDK
+  test-typescript-sdk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/sdk/typescript
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: packages/sdk/typescript/package-lock.json
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Lint
+      run: npm run lint
+    
+    - name: Type check
+      run: npm run build
+    
+    - name: Test
+      run: npm test
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: packages/sdk/typescript/coverage/lcov.info
+        flags: typescript-sdk
+
+  # Build and test example flows
+  test-example-flows:
+    runs-on: ubuntu-latest
+    needs: [test-python-sdk]
+    
+    strategy:
+      matrix:
+        flow: [cluster-keywords]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install CLOSED AI SDK
+      run: |
+        cd packages/sdk/python
+        pip install -e .
+    
+    - name: Install flow dependencies
+      run: |
+        cd examples/${{ matrix.flow }}
+        pip install -r requirements.txt
+    
+    - name: Validate flow.json
+      run: |
+        cd examples/${{ matrix.flow }}
+        python -c "
+        import json
+        import jsonschema
+        
+        # Load flow spec
+        with open('flow.json', 'r') as f:
+            flow_spec = json.load(f)
+        
+        # Load schema
+        with open('../../packages/sdk/schema/flow.schema.json', 'r') as f:
+            schema = json.load(f)
+        
+        # Validate
+        jsonschema.validate(flow_spec, schema)
+        print('✅ Flow spec is valid')
+        "
+    
+    - name: Test flow execution
+      run: |
+        cd examples/${{ matrix.flow }}
+        python -c "
+        import asyncio
+        import json
+        from main import run
+        
+        # Test inputs
+        test_inputs = {
+            'text': 'Artificial intelligence and machine learning are transforming technology.',
+            'num_clusters': 3,
+            'language': 'en'
+        }
+        
+        # Run flow
+        result = asyncio.run(run(test_inputs))
+        print('✅ Flow executed successfully')
+        print(f'Result keys: {list(result.keys())}')
+        "
+
+  # Test Modal deployment
+  test-modal-deployment:
+    runs-on: ubuntu-latest
+    needs: [test-example-flows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install Modal
+      run: pip install modal
+    
+    - name: Authenticate with Modal
+      run: |
+        echo "${{ secrets.MODAL_TOKEN_SECRET }}" | modal token set
+      env:
+        MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+    
+    - name: Deploy test flow
+      run: |
+        cd packages/infra/modal
+        python deploy.py ../../examples/cluster-keywords
+    
+    - name: Test deployed flow
+      run: |
+        # Test the deployed flow via Modal API
+        echo "Testing deployed flow..."
+        # This would call the deployed Modal function
+    
+  # Build and test frontend
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/web
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: packages/web/package-lock.json
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Lint
+      run: npm run lint
+    
+    - name: Type check
+      run: npm run type-check
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Test
+      run: npm test
+    
+    - name: E2E tests
+      run: npm run test:e2e
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: packages/web/coverage/lcov.info
+        flags: frontend
+
+  # Security scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Python security scan
+      run: |
+        pip install safety bandit
+        safety check --json
+        bandit -r packages/sdk/python/closedai -f json
+      continue-on-error: true
+
+  # Deploy to staging
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [test-python-sdk, test-typescript-sdk, test-frontend, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # This would deploy to staging infrastructure
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests..."
+        # This would run basic health checks
+    
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: 'Staging deployment completed'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Deploy to production
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [test-python-sdk, test-typescript-sdk, test-frontend, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy Python SDK to PyPI
+      run: |
+        cd packages/sdk/python
+        pip install build twine
+        python -m build
+        twine upload dist/*
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+    
+    - name: Deploy TypeScript SDK to npm
+      run: |
+        cd packages/sdk/typescript
+        npm ci
+        npm run build
+        npm publish
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    
+    - name: Deploy frontend to Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+        working-directory: packages/web
+    
+    - name: Deploy Modal functions
+      run: |
+        cd packages/infra/modal
+        pip install modal
+        echo "${{ secrets.MODAL_TOKEN_SECRET }}" | modal token set
+        # Deploy all example flows
+        for flow in ../../examples/*/; do
+          if [ -f "$flow/flow.json" ]; then
+            echo "Deploying $flow"
+            python deploy.py "$flow"
+          fi
+        done
+      env:
+        MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+    
+    - name: Update documentation
+      run: |
+        echo "Updating documentation..."
+        # This would update docs site
+    
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: 'Production deployment completed'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Create GitHub release
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Generate changelog
+      run: |
+        # Generate changelog from git commits
+        git log --oneline --pretty=format:"* %s" $(git describe --tags --abbrev=0)..HEAD > CHANGELOG.md
+    
+    - name: Get version
+      id: version
+      run: |
+        VERSION=$(grep -E '^version = ' packages/sdk/python/setup.py | cut -d'"' -f2)
+        echo "VERSION=v$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        release_name: Release ${{ steps.version.outputs.VERSION }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Cleanup
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always()
+    
+    steps:
+    - name: Cleanup artifacts
+      run: |
+        echo "Cleaning up temporary artifacts..."
+        # This would clean up any temporary resources 

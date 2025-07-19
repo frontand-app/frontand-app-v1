@@ -1,0 +1,117 @@
+{
+  "id": "cluster-keywords",
+  "name": "Cluster Keywords",
+  "version": "1.0.0",
+  "description": "Analyzes and clusters keywords from text input using AI to identify semantic groups and patterns",
+  "inputs": [
+    {
+      "name": "text",
+      "type": "text",
+      "description": "Text to analyze for keywords",
+      "required": true,
+      "ui": {
+        "widget": "textarea",
+        "placeholder": "Enter text to analyze for keywords...",
+        "help": "Provide the text you want to analyze. The AI will extract and cluster related keywords.",
+        "rows": 8
+      }
+    },
+    {
+      "name": "num_clusters",
+      "type": "number",
+      "description": "Number of keyword clusters to create",
+      "required": false,
+      "default": 5,
+      "validation": {
+        "min": 2,
+        "max": 20
+      },
+      "ui": {
+        "widget": "input",
+        "placeholder": "5",
+        "help": "How many groups of related keywords to create (2-20)"
+      }
+    },
+    {
+      "name": "min_keywords",
+      "type": "number",
+      "description": "Minimum number of keywords per cluster",
+      "required": false,
+      "default": 2,
+      "validation": {
+        "min": 1,
+        "max": 10
+      },
+      "ui": {
+        "widget": "input",
+        "placeholder": "2",
+        "help": "Minimum keywords required in each cluster"
+      }
+    },
+    {
+      "name": "language",
+      "type": "string",
+      "description": "Language of the text for better processing",
+      "required": false,
+      "default": "en",
+      "validation": {
+        "enum": ["en", "es", "fr", "de", "it", "pt", "nl", "auto"]
+      },
+      "ui": {
+        "widget": "select",
+        "help": "Select the language or use 'auto' for automatic detection"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "name": "clusters",
+      "type": "array",
+      "description": "Array of keyword clusters with their semantic groups"
+    },
+    {
+      "name": "keywords",
+      "type": "array",
+      "description": "All extracted keywords with relevance scores"
+    },
+    {
+      "name": "summary",
+      "type": "string",
+      "description": "AI-generated summary of the keyword clustering analysis"
+    },
+    {
+      "name": "language_detected",
+      "type": "string",
+      "description": "Detected language of the input text"
+    }
+  ],
+  "runtime": {
+    "image": "closedai/python:3.11",
+    "entrypoint": "main:run",
+    "gpu": "l4",
+    "timeout": 300,
+    "memory": 2048
+  },
+  "meta": {
+    "author": "CLOSED AI Team",
+    "category": "analysis",
+    "tags": ["keywords", "clustering", "nlp", "analysis", "text-processing"],
+    "license": "MIT",
+    "repository": "https://github.com/closedai/flows/tree/main/cluster-keywords",
+    "estimated_cost": {
+      "min_usd": 0.005,
+      "max_usd": 0.025,
+      "typical_usd": 0.012
+    }
+  },
+  "llm": {
+    "default_model": "llama3-8b-q4",
+    "supported_models": ["llama3-8b-q4", "llama3-70b-q4", "claude-3-haiku", "gpt-4o-mini"],
+    "estimated_tokens": {
+      "input_min": 200,
+      "input_max": 5000,
+      "output_min": 300,
+      "output_max": 1500
+    }
+  }
+} 

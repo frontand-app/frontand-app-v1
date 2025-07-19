@@ -1,0 +1,51 @@
+{
+  "cpu": {
+    "name": "CPU Only",
+    "price_per_second_usd": 0.0000131,
+    "price_per_minute_usd": 0.000786,
+    "price_per_hour_usd": 0.0472,
+    "vcpu_count": 2,
+    "memory_gb": 4,
+    "description": "CPU-only container for lightweight tasks"
+  },
+  "l4": {
+    "name": "NVIDIA L4",
+    "price_per_second_usd": 0.000222,
+    "price_per_minute_usd": 0.0133,
+    "price_per_hour_usd": 0.80,
+    "vcpu_count": 4,
+    "memory_gb": 16,
+    "gpu_memory_gb": 24,
+    "description": "Efficient GPU for 8B-13B models, good price/performance"
+  },
+  "a10g": {
+    "name": "NVIDIA A10G",
+    "price_per_second_usd": 0.000306,
+    "price_per_minute_usd": 0.0184,
+    "price_per_hour_usd": 1.10,
+    "vcpu_count": 8,
+    "memory_gb": 32,
+    "gpu_memory_gb": 24,
+    "description": "Balanced GPU for 13B-30B models, good for production"
+  },
+  "a100": {
+    "name": "NVIDIA A100 40GB",
+    "price_per_second_usd": 0.000583,
+    "price_per_minute_usd": 0.0350,
+    "price_per_hour_usd": 2.10,
+    "vcpu_count": 16,
+    "memory_gb": 64,
+    "gpu_memory_gb": 40,
+    "description": "High-end GPU for 70B+ models, maximum performance"
+  },
+  "a100-80gb": {
+    "name": "NVIDIA A100 80GB",
+    "price_per_second_usd": 0.000833,
+    "price_per_minute_usd": 0.0500,
+    "price_per_hour_usd": 3.00,
+    "vcpu_count": 16,
+    "memory_gb": 128,
+    "gpu_memory_gb": 80,
+    "description": "Premium GPU for largest models, maximum memory"
+  }
+} 
