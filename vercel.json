@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "frontand-app",
   "builds": [
     {
       "src": "package.json",
@@ -7,6 +8,12 @@
       "config": {
         "distDir": "dist"
       }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "env": {
@@ -19,6 +26,7 @@
       "VITE_ENVIRONMENT": "production"
     }
   },
+  "functions": {},
   "rewrites": [
     {
       "source": "/(.*)",

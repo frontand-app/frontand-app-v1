@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Coins, TrendingUp, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { CreditsService, UserProfile, CreditTransaction } from '@/lib/credits';
+import { supabase } from '@/lib/supabase';
 
 interface CreditsDisplayProps {
   workflowId?: string;
@@ -53,6 +54,75 @@ export const CreditsDisplay: React.FC<CreditsDisplayProps> = ({
       console.error('Error loading credits data:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Manually create user profile as fallback
+  const createProfileManually = async () => {
+    if (!user) return;
+
+    try {
+      setIsRefreshing(true);
+      
+      // Create profile directly using Supabase with better error handling
+      const newProfile = {
+        id: user.id,
+        email: user.email!,
+        full_name: user.user_metadata?.full_name || null,
+        avatar_url: user.user_metadata?.avatar_url || null,
+        credits_balance: 100.0,
+        tier: 'free' as const,
+        is_verified: !!user.email_confirmed_at,
+      };
+
+      console.log('Attempting to create profile:', newProfile);
+
+      const { data: createdProfile, error } = await supabase.from('profiles')
+        .upsert(newProfile, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating profile manually:', error);
+        
+        // Check if it's an RLS error
+        if (error.message?.includes('policy') || error.code === '42501') {
+          alert(`Database permission error detected. 
+
+The profiles table is missing an INSERT policy in Row Level Security.
+
+To fix this:
+1. Go to your Supabase dashboard
+2. Open the SQL Editor
+3. Run this query:
+
+CREATE POLICY "Users can insert own profile" ON profiles 
+FOR INSERT WITH CHECK (auth.uid() = id);
+
+Then refresh this page and try again.`);
+        } else {
+          alert('Unable to create profile: ' + error.message);
+        }
+        return;
+      }
+
+      setProfile(createdProfile);
+      
+      // Add welcome transaction
+      await CreditsService.addCreditTransaction(
+        user.id,
+        100.0,
+        'bonus',
+        'Welcome bonus for new users'
+      );
+
+      console.log('Profile created successfully:', createdProfile);
+
+    } catch (error) {
+      console.error('Manual profile creation failed:', error);
+      alert('Profile creation failed. Please try again or contact support.');
+    } finally {
       setIsRefreshing(false);
     }
   };
@@ -106,17 +176,20 @@ export const CreditsDisplay: React.FC<CreditsDisplayProps> = ({
 
   if (!user) {
     return (
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
         <CardContent className="p-6">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
-              <Coins className="h-8 w-8 text-blue-600" />
+              <Coins className="h-8 w-8 text-emerald-600" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-blue-900">Demo Mode</h3>
-              <p className="text-sm text-blue-700">
-                Sign in to track your credits and save workflow results
+              <h3 className="font-semibold text-emerald-900">Free Plan Available</h3>
+              <p className="text-sm text-emerald-700">
+                Sign up to get 100 free credits and start building workflows
               </p>
+              <div className="mt-2 text-xs text-emerald-600">
+                No credit card required • Start building immediately
+              </div>
             </div>
           </div>
         </CardContent>
@@ -126,21 +199,35 @@ export const CreditsDisplay: React.FC<CreditsDisplayProps> = ({
 
   if (!profile) {
     return (
-      <Card className="bg-gradient-to-r from-red-50 to-pink-50 border-red-200">
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <CardContent className="p-6">
           <div className="flex items-center space-x-3">
-            <AlertCircle className="h-8 w-8 text-red-600" />
+            <Coins className="h-8 w-8 text-blue-600" />
             <div>
-              <h3 className="font-semibold text-red-900">Error Loading Profile</h3>
-              <p className="text-sm text-red-700">Unable to load your credit information</p>
+              <h3 className="font-semibold text-blue-900">Setting Up Your Account</h3>
+              <p className="text-sm text-blue-700">Creating your credit profile...</p>
+              <div className="mt-2 flex space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={loadCreditsData}
-                className="mt-2"
+                  className="text-blue-700 border-blue-300 hover:bg-blue-50"
               >
+                  <RefreshCw className="h-4 w-4 mr-1" />
                 Retry
               </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => createProfileManually()}
+                  className="text-blue-700 border-blue-300 hover:bg-blue-50"
+                >
+                  Create Profile
+                </Button>
+              </div>
+              <div className="mt-2 text-xs text-blue-600">
+                New accounts get 100 free credits • No credit card required
+              </div>
             </div>
           </div>
         </CardContent>

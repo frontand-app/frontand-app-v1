@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signInWithEmail } = useAuth();
+  const navigate = useNavigate();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,7 +70,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
         }
       } else {
         setSuccess('Login successful! Welcome back.');
-        // The auth context will handle the redirect
+        // Auto-redirect after brief success message
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
       }
     } catch (err: any) {
       console.error('Login error:', err);
@@ -185,4 +190,108 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
       </CardContent>
     </Card>
   );
-};
+}; 
+        <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <LogIn className="w-6 h-6 text-white" />
+        </div>
+        <CardTitle className="text-2xl font-bold text-gray-900">
+          Welcome back
+        </CardTitle>
+        <CardDescription className="text-gray-600">
+          Sign in to your Front& account
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              Email
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={handleEmailChange}
+                onBlur={() => email && validateEmail(email)}
+                className={`pl-10 h-11 border-gray-300 focus:border-primary-500 focus:ring-primary-500 ${
+                  emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                }`}
+                required
+              />
+            </div>
+            {emailError && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {emailError}
+              </p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              Password
+            </Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 h-11 border-gray-300 focus:border-primary-500 focus:ring-primary-500"
+                required
+              />
+            </div>
+          </div>
+
+          {error && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-700">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {success && (
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                {success}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full h-11 bg-primary-500 hover:bg-primary-600 text-white"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              'Sign in'
+            )}
+          </Button>
+        </form>
+
+        <div className="text-center">
+          <Button
+            variant="link"
+            onClick={onToggleMode}
+            className="text-primary-600 hover:text-primary-700 p-0"
+          >
+            Don't have an account? Sign up
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );

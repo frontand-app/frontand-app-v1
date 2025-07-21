@@ -45,9 +45,21 @@ export interface WorkflowCost {
   model_multiplier: number;
 }
 
+// Workflow ID mapping for easier reference
+export const WORKFLOW_IDS = {
+  'loop-over-rows': '550e8400-e29b-41d4-a716-446655440001',
+  'cluster-keywords': '550e8400-e29b-41d4-a716-446655440002'
+} as const;
+
 // Workflow pricing configuration
 export const WORKFLOW_PRICING: Record<string, WorkflowCost> = {
-  'cluster-keywords': {
+  [WORKFLOW_IDS['loop-over-rows']]: {
+    base_cost: 0.05, // Small base cost for setup
+    per_input_cost: 0.01, // 1 cent per row of data
+    per_output_cost: 0.005, // Small output cost
+    model_multiplier: 1.5 // Gemini 2.5-Flash multiplier
+  },
+  [WORKFLOW_IDS['cluster-keywords']]: {
     base_cost: 0.1,
     per_input_cost: 0.001,
     per_output_cost: 0.002,
@@ -166,8 +178,12 @@ export class CreditsService {
 
     let cost = pricing.base_cost;
 
-    // Calculate input-based costs
-    if (inputData) {
+    // Special handling for loop-over-rows: cost based on number of data rows
+    if (workflowId === WORKFLOW_IDS['loop-over-rows'] && inputData?.data) {
+      const numRows = Object.keys(inputData.data).length;
+      cost += numRows * pricing.per_input_cost; // Cost per row
+    } else if (inputData) {
+      // Default: calculate input-based costs by size
       const inputSize = JSON.stringify(inputData).length;
       const inputUnits = Math.ceil(inputSize / 1000); // 1 unit per 1KB
       cost += inputUnits * pricing.per_input_cost;
@@ -179,6 +195,7 @@ export class CreditsService {
       'gpt-3.5-turbo': 1.0,
       'claude-3': 1.8,
       'llama-3': 0.8,
+      'gemini-2.5-flash': 1.5,
       'default': 1.0
     };
 

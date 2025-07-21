@@ -86,6 +86,7 @@ const FlowRunner: React.FC = () => {
         name: id === 'cluster-keywords' ? 'Cluster Keywords' : 
               id === 'sentiment-analysis' ? 'Sentiment Analysis' :
               id === 'google-sheets-processor' ? 'Google Sheets Processor' :
+              id === '550e8400-e29b-41d4-a716-446655440001' ? 'Loop Over Rows - AI Batch Processing' :
               'Data Enrichment',
         description: id === 'cluster-keywords' 
           ? 'Automatically group and categorize keywords using AI clustering algorithms'
@@ -93,12 +94,14 @@ const FlowRunner: React.FC = () => {
           ? 'Analyze emotional tone and sentiment in text content'
           : id === 'google-sheets-processor'
           ? 'Process and enrich data in Google Sheets with AI'
+          : id === '550e8400-e29b-41d4-a716-446655440001'
+          ? 'Scalable AI processing with Gemini 2.5-Flash. Transform any workflow into a highly scalable AI processing pipeline with row-keyed object structure and webhook delivery.'
           : 'Enrich your data with additional information and insights',
         category: 'Text Analysis',
         creator: 'CLOSED AI Team',
         rating: 4.8,
         estimatedTime: '30 seconds',
-        estimatedCost: '0.1 credits',
+        estimatedCost: id === '550e8400-e29b-41d4-a716-446655440001' ? '0.08 credits' : '0.1 credits',
         inputs: id === 'cluster-keywords' ? [
           {
             id: 'keywords',
@@ -149,6 +152,41 @@ const FlowRunner: React.FC = () => {
               { value: 'de', label: 'German' }
             ]
           }
+        ] : id === '550e8400-e29b-41d4-a716-446655440001' ? [
+          {
+            id: 'data',
+            type: 'textarea',
+            label: 'Input Data',
+            description: 'Row-keyed data object. Example: {"row1": ["enterprise chatbot"], "row2": ["AI assistant"]}',
+            required: true,
+            placeholder: '{"row1": ["enterprise chatbot"], "row2": ["AI automation platform"], "row3": ["machine learning analytics"]}'
+          },
+          {
+            id: 'headers',
+            type: 'text',
+            label: 'Column Headers',
+            description: 'Comma-separated headers for your data columns',
+            required: true,
+            placeholder: 'Keyword',
+            default: 'Keyword'
+          },
+          {
+            id: 'prompt',
+            type: 'textarea',
+            label: 'Processing Prompt',
+            description: 'Tell the AI what to do with each row. Be specific about evaluation criteria.',
+            required: true,
+            placeholder: 'Evaluate each keyword for relevance to AI automation and enterprise market potential. Rate 0-100 and explain why.'
+          },
+          {
+            id: 'batch_size',
+            type: 'number',
+            label: 'Batch Size',
+            description: 'Number of rows to process concurrently (1-100)',
+            default: 10,
+            min: 1,
+            max: 100
+          }
         ] : [
           {
             id: 'data_input',
@@ -176,6 +214,9 @@ const FlowRunner: React.FC = () => {
         defaults.keywords = defaults.keywords || 'digital marketing, online marketing, social media marketing, content marketing, email marketing, SEO, SEM, PPC, Facebook ads, Google ads, Instagram marketing, LinkedIn marketing, Twitter marketing, YouTube marketing, affiliate marketing, influencer marketing, video marketing, mobile marketing, marketing automation, conversion optimization';
       } else if (id === 'sentiment-analysis') {
         defaults.text = defaults.text || 'I absolutely love this new product! The design is incredible and it works perfectly. The customer service team was also super helpful when I had questions. Highly recommend!';
+      } else if (id === '550e8400-e29b-41d4-a716-446655440001') {
+        defaults.data = defaults.data || '{"row1": ["AI chatbot for customer service"], "row2": ["automated email marketing platform"], "row3": ["machine learning analytics dashboard"], "row4": ["voice-activated smart home assistant"], "row5": ["blockchain payment processor"]}';
+        defaults.prompt = defaults.prompt || 'Evaluate each keyword for relevance to AI automation and enterprise market potential. Rate 0-100 and explain why.';
       }
       
       setFormData(prev => ({ ...defaults, ...prev }));
@@ -194,7 +235,108 @@ const FlowRunner: React.FC = () => {
   };
 
   const executeWorkflowAPI = async (workflowId: string, inputs: any, userId?: string): Promise<any> => {
-    // Get API URL from environment
+    // Quick toggle: Set to false to use mock data while testing
+    const USE_REAL_MODAL = true; // Change to true when Modal endpoint is ready
+    
+    // Direct Modal integration for Loop Over Rows workflow
+    if (workflowId === '550e8400-e29b-41d4-a716-446655440001' && USE_REAL_MODAL) {
+      try {
+        console.log('🚀 Calling real Modal endpoint...');
+        
+        const response = await fetch('https://scaile--loop-over-rows-fastapi-app.modal.run/process', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            data: typeof inputs.data === 'string' ? JSON.parse(inputs.data) : inputs.data,
+            headers: inputs.headers.split(',').map(h => h.trim()),
+            prompt: inputs.prompt,
+            batch_size: inputs.batch_size || 10
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          throw new Error(`Modal API Error ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Modal response received:', result);
+        
+        // Transform Modal response to expected format
+        if (result.data && result.headers) {
+          const tableData = {
+            columns: result.headers.map((header, index) => ({
+              key: header.toLowerCase().replace(/\s+/g, '_'),
+              label: header,
+              type: index === 1 ? 'number' : 'text' // Assume second column is score
+            })),
+            rows: Object.entries(result.data).map(([rowKey, rowData], index) => {
+              const row: any = { id: index + 1 };
+              result.headers.forEach((header, colIndex) => {
+                const key = header.toLowerCase().replace(/\s+/g, '_');
+                row[key] = Array.isArray(rowData) ? rowData[colIndex] : rowData;
+              });
+              return row;
+            }),
+            metadata: {
+              totalRows: Object.keys(result.data).length,
+              successfulRows: result.successful_rows || Object.keys(result.data).length,
+              failedRows: result.failed_rows || 0,
+              processingTime: '30-60s',
+              model: 'gemini-2.5-flash'
+            }
+          };
+
+          return {
+            success: true,
+            results: {
+              type: 'table',
+              data: tableData,
+              raw_output: result.data
+            },
+            execution_id: 'modal_' + Date.now(),
+            credits_used: CreditsService.calculateWorkflowCost(workflowId, inputs)
+          };
+        }
+
+        // If response format is different, return raw
+        return {
+          success: true,
+          results: result,
+          execution_id: 'modal_' + Date.now(),
+          credits_used: CreditsService.calculateWorkflowCost(workflowId, inputs)
+        };
+
+      } catch (error) {
+        console.error('❌ Modal API call failed:', error);
+        
+        // Show specific error message for Modal endpoint issues
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        if (errorMessage.includes('404') || errorMessage.includes('Failed to fetch')) {
+          throw new Error(`Modal endpoint not found. This could mean:
+          
+1. The Modal app isn't deployed yet
+2. The endpoint URL is incorrect
+3. CORS settings need to be configured
+
+Current endpoint: https://scaile--loop-over-rows-fastapi-app.modal.run/process
+
+To fix this:
+• Deploy your Modal app: modal deploy
+• Check the correct endpoint URL in Modal dashboard
+• Or enable mock data for testing by commenting out this direct integration
+
+Original error: ${errorMessage}`);
+        }
+        
+        throw error; // Don't fall back to mock data for real integration
+      }
+    }
+
+    // For other workflows, try the backend API
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     
     try {
@@ -392,6 +534,79 @@ const FlowRunner: React.FC = () => {
         execution_id: 'demo_' + Date.now(),
         credits_used: CreditsService.calculateWorkflowCost(workflowId, inputs)
       };
+    }
+
+    // Loop Over Rows workflow - simulate AI batch processing results
+    if (workflowId === '550e8400-e29b-41d4-a716-446655440001') {
+      try {
+        const data = typeof inputs.data === 'string' ? JSON.parse(inputs.data) : inputs.data;
+        const rowKeys = Object.keys(data);
+        const prompt = inputs.prompt || 'Evaluate this data';
+        
+        // Simulate AI processing results for each row
+        const processedData: Record<string, any> = {};
+        
+        rowKeys.forEach(rowKey => {
+          const rowData = data[rowKey];
+          const keyword = Array.isArray(rowData) ? rowData[0] : rowData;
+          
+          // Generate realistic AI evaluation scores and rationales
+          const score = Math.floor(Math.random() * 40) + 60; // 60-100 range
+          const rationales = [
+            `High market demand for ${keyword} solutions in enterprise sector`,
+            `Strong alignment with current AI automation trends`,
+            `Competitive landscape shows growing opportunities`,
+            `Implementation complexity is manageable with modern AI tools`,
+            `Revenue potential significant for B2B applications`,
+            `Market saturation is low, good entry opportunity`,
+            `Technical feasibility high with current AI capabilities`
+          ];
+          
+          const rationale = rationales[Math.floor(Math.random() * rationales.length)];
+          
+          processedData[rowKey] = [keyword, score, rationale];
+        });
+
+        const tableData = {
+          columns: [
+            { key: 'keyword', label: 'Keyword', type: 'text' },
+            { key: 'score', label: 'AI Score', type: 'number' },
+            { key: 'rationale', label: 'Rationale', type: 'text' }
+          ],
+          rows: rowKeys.map((rowKey, index) => ({
+            id: index + 1,
+            keyword: processedData[rowKey][0],
+            score: processedData[rowKey][1],
+            rationale: processedData[rowKey][2]
+          })),
+          metadata: {
+            totalRows: rowKeys.length,
+            successfulRows: rowKeys.length,
+            failedRows: 0,
+            processingTime: '2.4s',
+            model: 'gemini-2.5-flash',
+            prompt: prompt.substring(0, 50) + '...'
+          }
+        };
+
+        return {
+          success: true,
+          results: {
+            type: 'table',
+            data: tableData,
+            raw_output: processedData
+          },
+          execution_id: 'modal_' + Date.now(),
+          credits_used: CreditsService.calculateWorkflowCost(workflowId, inputs)
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: 'Invalid data format. Please use row-keyed JSON object.',
+          execution_id: 'error_' + Date.now(),
+          credits_used: 0
+        };
+      }
     }
 
     // Default response for other workflows
@@ -606,8 +821,8 @@ const FlowRunner: React.FC = () => {
       );
     }
 
-    // Handle Google Sheets table output
-    if (workflow?.id === 'google-sheets-processor' && results.type === 'table') {
+    // Handle table output for Google Sheets and Loop Over Rows workflows
+    if ((workflow?.id === 'google-sheets-processor' || workflow?.id === '550e8400-e29b-41d4-a716-446655440001') && results.type === 'table') {
       return (
         <TableOutput
           data={results.data}
@@ -820,7 +1035,7 @@ const FlowRunner: React.FC = () => {
         {!user && (
           <Alert className="border-blue-200 bg-blue-50">
             <AlertDescription className="text-blue-700">
-              🚀 Demo Mode: You can run workflows without signing in. Sign in to save results and track usage.
+              🚀 Demo Mode: Results will be shown but not saved to your account history. Sign in to save results and track usage.
             </AlertDescription>
           </Alert>
         )}
@@ -876,3 +1091,4 @@ const FlowRunner: React.FC = () => {
 };
 
 export default FlowRunner;
+

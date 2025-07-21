@@ -17,6 +17,7 @@ import {
   Calendar
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   // Mock data for dashboard
@@ -177,7 +178,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Charts */}
         <div className="lg:col-span-2 space-y-6">
-          <Tabs defaultValue="usage" className="w-full">
+          <Tabs defaultValue="usage" className="w-full" id="analytics-section">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="usage">Usage Over Time</TabsTrigger>
               <TabsTrigger value="models">Model Usage</TabsTrigger>
@@ -298,17 +299,24 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <Play className="w-6 h-6" />
-              <span>Run New Flow</span>
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2" asChild>
+              <Link to="/flows">
+                <Play className="w-6 h-6" />
+                <span>Run New Flow</span>
+              </Link>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2" onClick={() => {
+              const analyticsSection = document.getElementById('analytics-section');
+              analyticsSection?.scrollIntoView({ behavior: 'smooth' });
+            }}>
               <TrendingUp className="w-6 h-6" />
               <span>View Analytics</span>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
-              <CreditCard className="w-6 h-6" />
-              <span>Manage Billing</span>
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2" asChild>
+              <Link to="/billing">
+                <CreditCard className="w-6 h-6" />
+                <span>Manage Billing</span>
+              </Link>
             </Button>
           </div>
         </CardContent>

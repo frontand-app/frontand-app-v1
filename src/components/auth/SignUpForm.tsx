@@ -154,6 +154,11 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onToggleMode }) => {
         setError(getErrorMessage(error));
       } else {
         setSuccess(true);
+        // Show welcome message for new users
+        setTimeout(() => {
+          // The auth context will handle the redirect to dashboard
+          // where users can see their welcome credits and explore workflows
+        }, 2000);
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -173,18 +178,25 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onToggleMode }) => {
             <CheckCircle className="w-6 h-6 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">
-            Check your email
+            Welcome to Front&!
           </CardTitle>
           <CardDescription className="text-gray-600">
-            We've sent you a confirmation link to complete your registration
+            We've sent you a confirmation link. You're almost ready to start building workflows!
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-4">
+          <Alert className="border-emerald-200 bg-emerald-50">
+            <CheckCircle className="h-4 w-4 text-emerald-600" />
+            <AlertDescription className="text-emerald-700">
+              <strong>🎉 Welcome bonus waiting!</strong> Once you confirm your email, you'll receive <strong>100 free credits</strong> to start exploring our workflow library.
+            </AlertDescription>
+          </Alert>
+          
           <Alert className="border-blue-200 bg-blue-50">
             <Mail className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-700">
-              <strong>Almost there!</strong> Please check your email at <strong>{email}</strong> and click the confirmation link to activate your account.
+              Please check your email at <strong>{email}</strong> and click the confirmation link to activate your account.
             </AlertDescription>
           </Alert>
           
@@ -370,3 +382,189 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onToggleMode }) => {
     </Card>
   );
 }; 
+};             <AlertDescription className="text-blue-700">
+              <strong>Almost there!</strong> Please check your email at <strong>{email}</strong> and click the confirmation link to activate your account.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="text-center text-sm text-gray-600">
+            <p>Didn't receive the email? Check your spam folder or</p>
+            <Button
+              variant="link"
+              onClick={() => setSuccess(false)}
+              className="text-primary-600 hover:text-primary-700 p-0 h-auto"
+            >
+              try again with a different email
+            </Button>
+          </div>
+          
+          <div className="text-center">
+            <Button
+              variant="link"
+              onClick={onToggleMode}
+              className="text-primary-600 hover:text-primary-700 p-0"
+            >
+              Back to sign in
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="w-full max-w-md mx-auto shadow-lg border border-gray-200 bg-white">
+      <CardHeader className="text-center pb-6">
+        <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <UserPlus className="w-6 h-6 text-white" />
+        </div>
+        <CardTitle className="text-2xl font-bold text-gray-900">
+          Create your account
+        </CardTitle>
+        <CardDescription className="text-gray-600">
+          Join Front& and start automating your workflows
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              Email
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={handleEmailChange}
+                onBlur={() => email && validateEmail(email)}
+                className={`pl-10 h-11 border-gray-300 focus:border-primary-500 focus:ring-primary-500 ${
+                  emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                }`}
+                required
+              />
+            </div>
+            {emailError && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {emailError}
+              </p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              Password
+            </Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Create a password"
+                value={password}
+                onChange={handlePasswordChange}
+                className={`pl-10 pr-10 h-11 border-gray-300 focus:border-primary-500 focus:ring-primary-500 ${
+                  passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                }`}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {password && (
+              <div className="flex items-center gap-2 text-sm">
+                <span>Password strength:</span>
+                <span className={passwordStrength.color}>{passwordStrength.message}</span>
+                <div className="flex-1 bg-gray-200 rounded-full h-1">
+                  <div 
+                    className={`h-1 rounded-full transition-all ${
+                      passwordStrength.score < 2 ? 'bg-red-500' :
+                      passwordStrength.score < 4 ? 'bg-yellow-500' :
+                      passwordStrength.score < 5 ? 'bg-blue-500' : 'bg-green-500'
+                    }`}
+                    style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+              Confirm Password
+            </Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={handleConfirmPasswordChange}
+                className={`pl-10 pr-10 h-11 border-gray-300 focus:border-primary-500 focus:ring-primary-500 ${
+                  passwordError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                }`}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {passwordError && (
+              <p className="text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {passwordError}
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-700">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full h-11 bg-primary-500 hover:bg-primary-600 text-white"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              'Create account'
+            )}
+          </Button>
+        </form>
+
+        <div className="text-center">
+          <Button
+            variant="link"
+            onClick={onToggleMode}
+            className="text-primary-600 hover:text-primary-700 p-0"
+          >
+            Already have an account? Sign in
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );

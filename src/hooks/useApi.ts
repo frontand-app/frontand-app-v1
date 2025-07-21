@@ -114,4 +114,3 @@ export const useAddCredits = () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
   });
-};

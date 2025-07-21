@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { monetizationManager, formatCurrency, formatCredits } from '@/lib/monetization';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { Link } from 'react-router-dom';
 
 interface CreatorStats {
   totalRevenue: number;
@@ -93,7 +94,7 @@ const CreatorsDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     if (!user) return;
 
-    setLoading(true);
+    // Show content immediately with mock data - no loading delay
     try {
       // Get creator stats
       const creatorStats = monetizationManager.getCreatorTotalEarnings(user.id);
@@ -199,13 +200,30 @@ const CreatorsDashboard: React.FC = () => {
               </p>
             </div>
             <div className="flex gap-3">
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => {
+                // Simulate export functionality
+                const data = JSON.stringify({
+                  workflows: stats?.totalWorkflows || 0,
+                  earnings: stats?.totalRevenue || 0,
+                  executions: stats?.totalExecutions || 0,
+                  exportDate: new Date().toISOString()
+                }, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'creator-data.json';
+                a.click();
+                URL.revokeObjectURL(url);
+              }}>
                 <Download className="w-4 h-4 mr-2" />
                 Export Data
               </Button>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                New Workflow
+              <Button asChild>
+                <Link to="/creators/new">
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Workflow
+                </Link>
               </Button>
             </div>
           </div>
@@ -303,7 +321,7 @@ const CreatorsDashboard: React.FC = () => {
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Analytics */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6" id="creator-analytics">
             {/* Revenue Chart */}
             <Card>
               <CardHeader>
@@ -326,19 +344,13 @@ const CreatorsDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={revenueData}>
+                  <BarChart data={revenueData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
-                    <Line 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke="#10a37f" 
-                      strokeWidth={2}
-                      dot={{ fill: '#10a37f' }}
-                    />
-                  </LineChart>
+                    <Bar dataKey="revenue" fill="#10a37f" />
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -424,19 +436,19 @@ const CreatorsDashboard: React.FC = () => {
                 <CardTitle className="text-lg">Revenue by Category</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={categoryData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
+                      outerRadius={100}
+                      fill="#8884d8"
                       dataKey="value"
+                      label
                     >
                       {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell key={`cell-${index}`} fill={categoryData[index].color} />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -465,19 +477,37 @@ const CreatorsDashboard: React.FC = () => {
                 <CardTitle className="text-lg">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full justify-start" variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Workflow
+                <Button className="w-full justify-start" variant="outline" asChild>
+                  <Link to="/creators/new">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New Workflow
+                  </Link>
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  <GitFork className="w-4 h-4 mr-2" />
-                  Fork Public Workflow
+                <Button className="w-full justify-start" variant="outline" asChild>
+                  <Link to="/flows">
+                    <GitFork className="w-4 h-4 mr-2" />
+                    Fork Public Workflow
+                  </Link>
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+                <Button className="w-full justify-start" variant="outline" onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'My Workflows on Front&',
+                      text: 'Check out my AI workflows on Front&',
+                      url: window.location.origin + '/creators'
+                    });
+                  } else {
+                    navigator.clipboard.writeText(window.location.origin + '/creators');
+                    alert('Link copied to clipboard!');
+                  }
+                }}>
                   <Share2 className="w-4 h-4 mr-2" />
                   Share Workflow
                 </Button>
-                <Button className="w-full justify-start" variant="outline">
+                <Button className="w-full justify-start" variant="outline" onClick={() => {
+                  const analyticsSection = document.getElementById('creator-analytics');
+                  analyticsSection?.scrollIntoView({ behavior: 'smooth' });
+                }}>
                   <BarChart3 className="w-4 h-4 mr-2" />
                   View Analytics
                 </Button>

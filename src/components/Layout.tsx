@@ -10,8 +10,9 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Github, Menu, X, User, LogOut, Settings, CreditCard, BarChart3 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { CreditsService, UserProfile } from "@/lib/credits";
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,8 +20,23 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const location = useLocation();
   const { user, signOut } = useAuth();
+
+  // Load user profile when user changes
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (user) {
+        const profile = await CreditsService.getUserProfile(user);
+        setUserProfile(profile);
+      } else {
+        setUserProfile(null);
+      }
+    };
+    
+    loadUserProfile();
+  }, [user]);
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -43,7 +59,7 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -99,7 +115,11 @@ const Layout = ({ children }: LayoutProps) => {
                           {user.email}
                         </p>
                         <p className="text-xs text-gray-500">
-                          Free Plan • 10 credits
+                          {userProfile ? (
+                            `${userProfile.tier.charAt(0).toUpperCase() + userProfile.tier.slice(1)} Plan • ${userProfile.credits_balance.toFixed(0)} credits`
+                          ) : (
+                            'Loading...'
+                          )}
                         </p>
                       </div>
                     </div>
@@ -116,9 +136,11 @@ const Layout = ({ children }: LayoutProps) => {
                         Creator Dashboard
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/billing" className="flex items-center">
                       <CreditCard className="mr-2 h-4 w-4" />
                       Billing
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
@@ -215,7 +237,7 @@ const Layout = ({ children }: LayoutProps) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 pt-16">
         {children}
       </main>
 
@@ -241,25 +263,25 @@ const Layout = ({ children }: LayoutProps) => {
                 <li><Link to="/flows" className="hover:text-gray-900">Flow Library</Link></li>
                 <li><Link to="/dashboard" className="hover:text-gray-900">Dashboard</Link></li>
                 <li><Link to="/creators" className="hover:text-gray-900">Creator Dashboard</Link></li>
-                <li><a href="#" className="hover:text-gray-900">Pricing</a></li>
+                <li><Link to="/billing" className="hover:text-gray-900">Pricing</Link></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-semibold text-gray-900 mb-4">Resources</h3>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">Documentation</a></li>
-                <li><a href="#" className="hover:text-gray-900">API Reference</a></li>
-                <li><a href="#" className="hover:text-gray-900">Community</a></li>
+                <li><Link to="/docs" className="hover:text-gray-900">Documentation</Link></li>
+                <li><Link to="/docs" className="hover:text-gray-900">API Reference</Link></li>
+                <li><a href="https://github.com/closedai/closedai/discussions" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Community</a></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-gray-900">About</a></li>
-                <li><a href="#" className="hover:text-gray-900">Blog</a></li>
-                <li><a href="https://github.com/closedai" className="hover:text-gray-900">GitHub</a></li>
+                <li><Link to="/about" className="hover:text-gray-900">About</Link></li>
+                <li><a href="https://github.com/closedai/closedai" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Blog</a></li>
+                <li><a href="https://github.com/closedai" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">GitHub</a></li>
               </ul>
             </div>
           </div>

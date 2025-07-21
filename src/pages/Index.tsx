@@ -231,15 +231,21 @@ const Index = () => {
             <Button 
               size="lg" 
               className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 text-lg"
+              asChild
             >
-              Get Started Free
+              <Link to="/auth">
+                Get Started Free
+              </Link>
             </Button>
             <Button 
               size="lg" 
               variant="outline" 
               className="border-gray-600 text-gray-300 hover:bg-gray-800 px-8 py-4 text-lg"
+              asChild
             >
-              View Documentation
+              <Link to="/docs">
+                View Documentation
+              </Link>
             </Button>
           </div>
         </div>
